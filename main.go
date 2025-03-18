@@ -14,19 +14,26 @@ import (
 	"strings"
 	"time"
 
+	"github.com/peterbourgon/ff"
 	"golang.org/x/crypto/ssh"
 )
 
 const globalTimeout = 30 * time.Second
 
-var caKeyRef = flag.String("ca", "", "ca private key (1p secret reference)")
-var userKeyRef = flag.String("u", "", "user public key (1p secret reference)")
-var certValidityPeriod = flag.Duration("d", time.Hour*24, "cert validity period")
-var principals = flag.String("p", "bob", "cert principals (comma-separated list)")
-var logTag = flag.String("t", "1pca", "syslog record tag")
-
 func main() {
-	flag.Parse()
+	fs := flag.NewFlagSet("1pca", flag.ExitOnError)
+	var (
+		caKeyRef           = fs.String("ca", "", "ca private key (1p secret reference)")
+		userKeyRef         = fs.String("u", "", "user public key (1p secret reference)")
+		certValidityPeriod = fs.Duration("d", time.Hour*24, "cert validity period")
+		principals         = fs.String("p", "bob", "cert principals (comma-separated list)")
+		logTag             = fs.String("t", "1pca", "syslog record tag")
+		_                  = fs.String("config", "", "config file (optional)")
+	)
+	ff.Parse(fs, os.Args[1:],
+		ff.WithConfigFileFlag("config"),
+		ff.WithConfigFileParser(ff.PlainParser),
+	)
 	stderr := log.New(os.Stderr, "", 0)
 	stdout := log.New(os.Stdout, "", 0)
 	sysl, err := syslog.New(syslog.LOG_NOTICE|syslog.LOG_USER, *logTag)
